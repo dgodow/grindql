@@ -1,0 +1,19 @@
+
+/*
+
+1. Given difficulty and language, find the current and easier difficulty ranges
+2. Generate a SQL query
+  2a. Find the range of "features" for that difficulty level (between X and Y); choose one randomly
+  2b. Choose a command (must be appropriate for the difficulty level) -- SELECT, INSERT, DELETE, etc.; identify command
+  2c. Choose a table (city, country, countrylanguage)
+  2d. Find context-specific identifiers for core command; identify as core identifiers
+      -- Table-specific
+      -- Verb-specific
+  2e. Fill out "features" into valid SQL
+  2f. Combine into query
+3. Translate SQL query into natural language
+  3a. Actual language analysis? Lexer -> Parser -> AST?
+  3b. Pre-existing library?
+4. API to generate a new query
+
+*/
