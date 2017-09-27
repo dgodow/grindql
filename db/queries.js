@@ -1,10 +1,10 @@
 'use strict';
 
-const db = require('./db.js').db;
-const createDbClient = require('./db.js').createDbClient;
+const db = require('./db.js');
 
-async function createQuery (database, query) {
-    const client = createDbClient(database);
+async function runQuery (database, query) {
+    // TODO: Reimplement the below with createDbClient now in the db object
+    // const client = createDbClient(database); 
     
     return client.connect()
     .then(() => client.query(query, (err) => {
@@ -42,19 +42,55 @@ const selector = (difficulty) => ({
 
     return numAttributes;
   },
+
+  findNumTables: function (difficulty, maxTables) {
+    if (!Number.isInteger(difficulty) || difficulty < 1) {
+      throw new Error("Difficulty must be a positive integer");
+    }
+
+    let numTables = 1;
+
+    switch (difficulty) {
+      case 1:
+        return numTables;
+        
+      case 2:
+        numTables = Math.round(Math.random() * 2);
+        return (numTables > 0) ? numTables : 1;
+
+      case 3:
+        numTables = Math.round(Math.random() * 3);
+        return (numTables > 0) ? numTables : 1;
+
+      default:
+        return 1;
+        break;
+    }
+  },
   
-  chooseAttributes: function (difficulty, tables) {
-    const quantity = this.findAttributeQuantity(difficulty, tables);
+  chooseAttributes: async function (difficulty) {
+    const tables = await this.getTables();
+    let attributes = await this.getAttributes(tables);
+    let quantity = this.findAttributeQuantity(difficulty, tables);
 
+    let chosenAttributes = [];
+    let numTables = this.findNumTables(difficulty);
 
-    return quantity;
+    while (quantity) {
+      let choice = Math.round(Math.random() * (attributes.length-1));
+      chosenAttributes.push(attributes[choice]);
+      attributes.splice(choice, 1);
+      quantity--;
+    }
+    return chosenAttributes;
   }
 
 })
 
 const queryEngine = (difficulty, database) => {
   let state = {
-    difficulty, database
+    difficulty, 
+    database
   };
 
   return Object.assign(
@@ -65,3 +101,4 @@ const queryEngine = (difficulty, database) => {
 };
 
 const querier = queryEngine(1, "world");
+console.log(querier.findNumTables(3));
