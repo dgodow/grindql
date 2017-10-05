@@ -1,104 +1,98 @@
 'use strict';
 
-const db = require('./db.js');
+const Database = require('./db.js');
+const QueryHelpers = require('./queryHelpers.js');
 
-async function runQuery (database, query) {
-    // TODO: Reimplement the below with createDbClient now in the db object
-    // const client = createDbClient(database); 
-    
-    return client.connect()
-    .then(() => client.query(query, (err) => {
-      if (err) throw new Error(err);
-    }))
-    .then(result => {
-      client.end();
-      return result;
-    })
+function query (query) {
+  const client = createDbClient(database);
+  client.query(query, err => {
+    if (err) throw new Error(err);
+  })
+  .then(result => {
+    client.end();
+    return result;
+  })
 }
 
-const selector = (difficulty) => ({
-  difficulty,
+// SELECT name FROM city WHERE city.countrycode = "AFG" AND city.population > 250000;
 
-  findAttributeQuantity: function (difficulty, tables) {
-    let dbAttributes = tables.length;
-    let numAttributes = 0;
-  
-    // Determine number of attributes based on difficulty
-    switch (difficulty) {
-      case 1: 
-        numAttributes = 1;
-        break;
-  
-      case 2:
-        if (dbAttributes.length < 2) return 1;
-        numAttributes = 1 + (Math.round(Math.random()));
-        break;
-  
-      case 3:
-        if (dbAttributes.length < 4) return dbAttributes;
-        numAttributes = 2 + (Math.round(Math.random())) * 2;
-        break;
-    }
+class SelectQueryCreator {
+  /**
+   * Creates SELECT queries based on a difficulty and set of tables. Tables are provided by the Database class.
+   * @param {int} difficulty 
+   * @param {string} database
+   */
 
-    return numAttributes;
-  },
-
-  findNumTables: function (difficulty, maxTables) {
-    if (!Number.isInteger(difficulty) || difficulty < 1) {
-      throw new Error("Difficulty must be a positive integer");
-    }
-
-    let numTables = 1;
-
-    switch (difficulty) {
-      case 1:
-        return numTables;
-        
-      case 2:
-        numTables = Math.round(Math.random() * 2);
-        return (numTables > 0) ? numTables : 1;
-
-      case 3:
-        numTables = Math.round(Math.random() * 3);
-        return (numTables > 0) ? numTables : 1;
-
-      default:
-        return 1;
-        break;
-    }
-  },
-  
-  chooseAttributes: async function (difficulty) {
-    const tables = await this.getTables();
-    let attributes = await this.getAttributes(tables);
-    let quantity = this.findAttributeQuantity(difficulty, tables);
-
-    let chosenAttributes = [];
-    let numTables = this.findNumTables(difficulty);
-
-    while (quantity) {
-      let choice = Math.round(Math.random() * (attributes.length-1));
-      chosenAttributes.push(attributes[choice]);
-      attributes.splice(choice, 1);
-      quantity--;
-    }
-    return chosenAttributes;
+  constructor (difficulty, database) {
+    this.difficulty = difficulty;
+    this.database = new Database(database);
+    this.queryHelpers = new QueryHelpers();
   }
 
-})
+  async buildQuery () {
+    /**
+     * Builds a SELECT query using a snapshot of the database's tables.
+     * @return {string} - a complete SELECT query.
+     */
 
-const queryEngine = (difficulty, database) => {
-  let state = {
-    difficulty, 
-    database
-  };
+    let query = "SELECT ";
+    const tables = await this.database.getAttributes();
+    const chosenTable = this.queryHelpers.chooseTable(tables);
 
-  return Object.assign(
-    {},
-    db(state.database),
-    selector(state.difficulty)
-  )
-};
+    // Build SELECT list (e.g., "SELECT a, b ")
+    const selectList = this.getSelectList(chosenTable);
 
-const querier = queryEngine(1, "world");
-console.log(querier.findNumTables(3));
+    if (selectList.length > 1) {
+      for (let i = 0, j = selectList.length; i < j; i++) query += selectList[i] + ", "; 
+    } else {
+      query += selectList[0] + " ";
+    }
+
+    // Build FROM clause
+    const fromClause = this.getFromClause(chosenTable);
+    query += fromClause;
+
+    // If difficulty is high enough, build where clause.
+    if (this.difficulty < 2) return query + ";";
+
+    const whereClause = this.getWhereClause(chosenTable, selectList);
+  }
+
+  getSelectList (table) {
+    /**
+     * Finds the attributes to be selected in the query (the "select list") given a table
+     * TODO: Expand to support SELECTs with joins (i.e., multiple tables)
+     * @param {array} table - an array of attributes from a table
+     * @param {integer} this.difficulty - the difficulty of the question
+     */
+
+     // Define which attributes should be selected
+     return this.queryHelpers.chooseAttributes(this.difficulty, table);
+  }
+
+  getFromClause (table) {
+    /** 
+     * Finds the FROM clause for the query given a table
+     * TODO: Expand to support join tables
+     * @param {array} table - an array of attributes from a table
+     */
+
+    const tableName = Object.keys(table)[0];
+    return `FROM ${tableName}`
+  }
+
+  getWhereClause (table, selectList) {
+    /**
+     * Adds a WHERE clause for the query given a table
+     * @param {array} table - an array of attributes from a table
+     * @param {integer} this.difficulty - the difficulty of the question
+     * @param {array} selectList - the attributes already included in the select statement (excluded from consideration for WHERE clause)
+     */
+
+    const remainingAttributes = table.filter(attribute => !selectList.includes(attribute))
+    console.log(remainingAttributes);
+  }
+}
+
+const queryCreator = new SelectQueryCreator(2, "world");
+queryCreator.buildQuery().then(result => console.log(result));
