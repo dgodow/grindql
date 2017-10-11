@@ -7,12 +7,13 @@ class Database {
   constructor (dbName) {
     this.dbName = dbName;
   }
-  
-  createDbClient () {
+
+  _createDbClient () {
     return new Client({
-      user: "dgodow", 
+      user: "appuser",
       host: "localhost",
       port: 5432,
+      password: "UeCnLxdY3BvQYYP5",
       database: `${this.dbName}`
     })
   }
@@ -22,18 +23,8 @@ class Database {
       throw new Error("No valid database detected.");
     }
 
-    const client = this.createDbClient();
     let response;
-
-    client.connect();
-    
-    try {
-      response = await client.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
-    } catch (err) {
-      throw new Error("Database query failed");
-    }
-    
-    client.end();
+    response = await this.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
 
     if (!Array.isArray(response.rows) || response.rows.length === 0) {
       throw new Error("Response was not a valid array or was empty.");
@@ -52,7 +43,7 @@ class Database {
         resolve(query);
       })
     });
-    
+
     return client.connect()
     .then(() => Promise.all(requests))
     .then(queryResults => {
@@ -74,6 +65,18 @@ class Database {
     const attributes = await this.getAttributes(tables);
 
     return attributes;
+  }
+
+  async query (query) {
+    const client = createDbClient(database);
+    client.connect();
+    client.query(query, err => {
+      if (err) return new Error(err);
+    })
+    .then(result => {
+      client.end();
+      return result;
+    })
   }
 }
 
