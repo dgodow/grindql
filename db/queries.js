@@ -3,23 +3,12 @@
 const Database = require('./db.js');
 const QueryHelpers = require('./queryHelpers.js');
 
-function query (query) {
-  const client = createDbClient(database);
-  client.query(query, err => {
-    if (err) throw new Error(err);
-  })
-  .then(result => {
-    client.end();
-    return result;
-  })
-}
-
 // SELECT name FROM city WHERE city.countrycode = "AFG" AND city.population > 250000;
 
 class SelectQueryCreator {
   /**
    * Creates SELECT queries based on a difficulty and set of tables. Tables are provided by the Database class.
-   * @param {int} difficulty 
+   * @param {int} difficulty
    * @param {string} database
    */
 
@@ -43,7 +32,7 @@ class SelectQueryCreator {
     const selectList = this.getSelectList(chosenTable);
 
     if (selectList.length > 1) {
-      for (let i = 0, j = selectList.length; i < j; i++) query += selectList[i] + ", "; 
+      for (let i = 0, j = selectList.length; i < j; i++) query += selectList[i] + ", ";
     } else {
       query += selectList[0] + " ";
     }
@@ -71,7 +60,7 @@ class SelectQueryCreator {
   }
 
   getFromClause (table) {
-    /** 
+    /**
      * Finds the FROM clause for the query given a table
      * TODO: Expand to support join tables
      * @param {array} table - an array of attributes from a table

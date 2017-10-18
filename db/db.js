@@ -7,12 +7,13 @@ class Database {
   constructor (dbName) {
     this.dbName = dbName;
   }
-  
-  createDbClient () {
+
+  _createDbClient () {
     return new Client({
-      user: "dgodow", 
+      user: "appuser",
       host: "localhost",
       port: 5432,
+      password: "UeCnLxdY3BvQYYP5",
       database: `${this.dbName}`
     })
   }
@@ -22,8 +23,8 @@ class Database {
       throw new Error("No valid database detected.");
     }
 
-    const client = this.createDbClient();
     let response;
+<<<<<<< HEAD
 
     client.connect();
     
@@ -56,7 +57,7 @@ class Database {
         resolve(query);
       })
     });
-    
+
     return client.connect()
     .then(() => Promise.all(requests))
     .then(queryResults => {
@@ -82,6 +83,18 @@ class Database {
     const attributes = await this.getAttributes(tables);
 
     return attributes;
+  }
+
+  async query (query) {
+    const client = createDbClient(database);
+    client.connect();
+    client.query(query, err => {
+      if (err) return new Error(err);
+    })
+    .then(result => {
+      client.end();
+      return result;
+    })
   }
 }
 
