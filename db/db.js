@@ -27,19 +27,23 @@ class Database {
 
     client.connect();
     
-    try {
-      response = await client.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
-    } catch (err) {
-      throw new Error("Database query failed");
-    }
-    
+    client.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
+    .then(response => {
+      client.end();
+      return response.rows.map(row => row.tablename);
+    })
+    .catch(err => {
+      client.end();
+      console.error(err);
+      return;
+    });
+
     client.end();
 
     if (!Array.isArray(response.rows) || response.rows.length === 0) {
       throw new Error("Response was not a valid array or was empty.");
     }
 
-    return response.rows.map(row => row.tablename)
   }
 
   async getAttributes () {
@@ -67,6 +71,10 @@ class Database {
         return {[result.rows[0].table_name]: attributes};
       });
     })
+    .catch(err => {
+      client.end();
+      console.error(err);
+    });
   }
 
   async loadTables () {
