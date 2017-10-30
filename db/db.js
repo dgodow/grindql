@@ -24,8 +24,8 @@ class Database {
     }
 
     let response;
-<<<<<<< HEAD
 
+    const client = this._createDbClient();
     client.connect();
     
     client.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
@@ -35,20 +35,12 @@ class Database {
     })
     .catch(err => {
       client.end();
-      console.error(err);
       return;
     });
-
-    client.end();
-
-    if (!Array.isArray(response.rows) || response.rows.length === 0) {
-      throw new Error("Response was not a valid array or was empty.");
-    }
-
   }
 
   async getAttributes () {
-    const client = this.createDbClient();
+    const client = this._createDbClient();
     const tables = await this._getTables();
 
     const requests = tables.map(table => {
@@ -74,7 +66,6 @@ class Database {
     })
     .catch(err => {
       client.end();
-      console.error(err);
     });
   }
 
